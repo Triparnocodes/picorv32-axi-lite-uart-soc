@@ -1,0 +1,450 @@
+# =============================================================================
+# Author       : Deepak
+# Designation  : Sr. VLSI Engineer
+# Organization : NIELIT CoE
+# =============================================================================
+# Run Commands — Verilator --binary flow
+# All commands must be run from the PROJECT ROOT directory
+# =============================================================================
+
+# =========================================================
+# COMMON VERILATOR FLAGS  (used by all targets below)
+# =========================================================
+
+VLFLAGS = --binary -j 0 -Wall \
+          --trace --timing \
+          -Wno-fatal \
+          -Wno-WIDTHTRUNC \
+          -Wno-WIDTHEXPAND \
+          -Wno-CASEINCOMPLETE \
+          -Wno-UNOPTFLAT \
+          -Wno-INITIALDLY \
+          -Wno-PINMISSING \
+          -Wno-UNSIGNED \
+          -Wno-SYNCASYNCNET \
+          -Wno-DECLFILENAME \
+          -Wno-GENUNNAMED \
+          -Wno-UNUSEDSIGNAL \
+          -Wno-PINCONNECTEMPTY \
+          -Wno-TIMESCALEMOD \
+          -Wno-CASEOVERLAP \
+          -Wno-BLKSEQ \
+          -Wno-EOFNEWLINE \
+          -Wno-PROCASSWIRE \
+          -Wno-WIDTHXZEXPAND \
+          -Wno-PROCASSINIT
+
+
+# =========================================================
+# MAKE SHORTCUTS  (run from project root)
+# =========================================================
+
+  make all                    → Run ALL sims sequentially (no GTKWave)
+  make fw                     → Build firmware only
+  make uart                   → UART loopback TB
+  make pico                   → PicoRV32 TB
+  make riscv_axi              → RISC-V AXI-Lite integration TB
+  make axi_uart               → AXI-Lite UART TB
+  make axi_sa                 → AXI-Lite standalone TB
+  make soc_pico_uart_mem      → PicoRV32 mem-mapped UART SoC
+  make soc                    → Full PicoRV32 + UART + AXI SoC
+  make debug_soc              → Full SoC structured verification log
+  make wave                   → Open last tb_top waveform in GTKWave
+  make synth                  → Run Yosys synthesis
+  make clean                  → Clean all build artifacts
+
+
+# =========================================================
+# UART
+# =========================================================
+# make uart
+# ─────────────────────────────────────────────────────────
+# Run from: PROJECT ROOT
+
+rm -rf obj_uart
+verilator --binary -j 0 -Wall \
+  --trace --timing \
+  -Wno-fatal \
+  -Wno-WIDTHTRUNC -Wno-WIDTHEXPAND -Wno-CASEINCOMPLETE \
+  -Wno-UNOPTFLAT -Wno-INITIALDLY -Wno-PINMISSING \
+  -Wno-UNSIGNED -Wno-SYNCASYNCNET -Wno-DECLFILENAME \
+  -Wno-GENUNNAMED -Wno-UNUSEDSIGNAL -Wno-PINCONNECTEMPTY \
+  -Wno-TIMESCALEMOD -Wno-CASEOVERLAP -Wno-BLKSEQ \
+  -Wno-EOFNEWLINE -Wno-PROCASSWIRE -Wno-WIDTHXZEXPAND \
+  -Wno-PROCASSINIT \
+  --top tb_uart_top \
+  -Mdir obj_uart \
+  -o sim_uart \
+  rtl/uart_tx.v \
+  rtl/uart_rx.v \
+  rtl/uart_top.v \
+  tb/tb_uart_top.v
+./obj_uart/sim_uart
+gtkwave tb_uart.vcd
+
+
+# =========================================================
+# AXI-Lite UART
+# =========================================================
+# make axi_uart
+# ─────────────────────────────────────────────────────────
+# Run from: PROJECT ROOT
+
+rm -rf obj_axilite
+verilator --binary -j 0 -Wall \
+  --trace --timing \
+  -Wno-fatal \
+  -Wno-WIDTHTRUNC -Wno-WIDTHEXPAND -Wno-CASEINCOMPLETE \
+  -Wno-UNOPTFLAT -Wno-INITIALDLY -Wno-PINMISSING \
+  -Wno-UNSIGNED -Wno-SYNCASYNCNET -Wno-DECLFILENAME \
+  -Wno-GENUNNAMED -Wno-UNUSEDSIGNAL -Wno-PINCONNECTEMPTY \
+  -Wno-TIMESCALEMOD -Wno-CASEOVERLAP -Wno-BLKSEQ \
+  -Wno-EOFNEWLINE -Wno-PROCASSWIRE -Wno-WIDTHXZEXPAND \
+  -Wno-PROCASSINIT \
+  --top tb_axi_lite \
+  -Mdir obj_axilite \
+  -o sim_axilite \
+  rtl/uart_tx.v \
+  rtl/uart_rx.v \
+  rtl/uart_axi.v \
+  tb/tb_axi_lite_master.v \
+  tb/tb_axi_lite.v
+./obj_axilite/sim_axilite
+gtkwave tb_axi_lite.vcd
+
+
+# =========================================================
+# AXI-Lite Standalone (educational — no RTL deps)
+# =========================================================
+# make axi_sa
+# ─────────────────────────────────────────────────────────
+# Run from: PROJECT ROOT
+
+rm -rf obj_axi_sa
+verilator --binary -j 0 -Wall \
+  --trace --timing \
+  -Wno-fatal \
+  -Wno-WIDTHTRUNC -Wno-WIDTHEXPAND -Wno-CASEINCOMPLETE \
+  -Wno-UNOPTFLAT -Wno-INITIALDLY -Wno-PINMISSING \
+  -Wno-UNSIGNED -Wno-SYNCASYNCNET -Wno-DECLFILENAME \
+  -Wno-GENUNNAMED -Wno-UNUSEDSIGNAL -Wno-PINCONNECTEMPTY \
+  -Wno-TIMESCALEMOD -Wno-CASEOVERLAP -Wno-BLKSEQ \
+  -Wno-EOFNEWLINE -Wno-PROCASSWIRE -Wno-WIDTHXZEXPAND \
+  -Wno-PROCASSINIT \
+  --top tb_axi_lite_standalone \
+  -Mdir obj_axi_sa \
+  -o sim_axi_sa \
+  tb/tb_axi_lite_standalone.v
+./obj_axi_sa/sim_axi_sa
+gtkwave tb_axi_lite_standalone.vcd
+
+
+# =========================================================
+# PicoRV32
+# =========================================================
+# make pico
+# ─────────────────────────────────────────────────────────
+# Run from: PROJECT ROOT
+
+rm -rf obj_pico
+cd rtl/PicoRV32 && make clean && make firmware && cd ../..
+verilator --binary -j 0 -Wall \
+  --trace --timing \
+  -Wno-fatal \
+  -Wno-WIDTHTRUNC -Wno-WIDTHEXPAND -Wno-CASEINCOMPLETE \
+  -Wno-UNOPTFLAT -Wno-INITIALDLY -Wno-PINMISSING \
+  -Wno-UNSIGNED -Wno-SYNCASYNCNET -Wno-DECLFILENAME \
+  -Wno-GENUNNAMED -Wno-UNUSEDSIGNAL -Wno-PINCONNECTEMPTY \
+  -Wno-TIMESCALEMOD -Wno-CASEOVERLAP -Wno-BLKSEQ \
+  -Wno-EOFNEWLINE -Wno-PROCASSWIRE -Wno-WIDTHXZEXPAND \
+  -Wno-PROCASSINIT \
+  --top tb_processor \
+  -Mdir obj_pico \
+  -o sim_pico \
+  rtl/PicoRV32/picorv32.v \
+  rtl/PicoRV32/Memory.v \
+  rtl/PicoRV32/top.v \
+  rtl/PicoRV32/tb_processor.v
+./obj_pico/sim_pico
+gtkwave tb_picorv32.vcd
+
+
+# =========================================================
+# PicoRV32 Memory-Mapped UART SoC (picorv32_uart_mem)
+# =========================================================
+# make soc_pico_uart_mem
+# ─────────────────────────────────────────────────────────
+# IMPORTANT: Run from PROJECT ROOT (not from picorv32_uart_mem/)
+#            The Makefile uses absolute paths — cd into the
+#            sub-project directory only for firmware build.
+
+cd picorv32_uart_mem/fw && make && cd ../..
+rm -rf picorv32_uart_mem/obj_mem/
+verilator --binary -j 0 -Wall \
+  --trace --timing \
+  -Wno-fatal \
+  -Wno-WIDTHTRUNC -Wno-WIDTHEXPAND -Wno-CASEINCOMPLETE \
+  -Wno-UNOPTFLAT -Wno-INITIALDLY -Wno-PINMISSING \
+  -Wno-UNSIGNED -Wno-SYNCASYNCNET -Wno-DECLFILENAME \
+  -Wno-GENUNNAMED -Wno-UNUSEDSIGNAL -Wno-PINCONNECTEMPTY \
+  -Wno-TIMESCALEMOD -Wno-CASEOVERLAP -Wno-BLKSEQ \
+  -Wno-EOFNEWLINE -Wno-PROCASSWIRE -Wno-WIDTHXZEXPAND \
+  -Wno-PROCASSINIT \
+  --top tb_mem_soc \
+  -Mdir picorv32_uart_mem/obj_mem \
+  -o sim_mem_soc \
+  picorv32_uart_mem/rtl/picorv32.v \
+  picorv32_uart_mem/rtl/uart_tx.v \
+  picorv32_uart_mem/rtl/uart_rx.v \
+  picorv32_uart_mem/rtl/mem_rom.v \
+  picorv32_uart_mem/rtl/mem_sram.v \
+  picorv32_uart_mem/rtl/uart_mem.v \
+  picorv32_uart_mem/rtl/top.v \
+  picorv32_uart_mem/tb/tb_mem_soc.v
+picorv32_uart_mem/obj_mem/sim_mem_soc +romhex=picorv32_uart_mem/rtl/rom.hex
+vcd2fst picorv32_uart_mem/tb_mem_soc.vcd picorv32_uart_mem/tb_mem_soc.fst
+gtkwave picorv32_uart_mem/tb_mem_soc.fst
+
+
+# =========================================================
+# RISC-V AXI-Lite Integration Demo
+# =========================================================
+# make riscv_axi
+# ─────────────────────────────────────────────────────────
+# Run from: PROJECT ROOT
+# Self-contained behavioral TB — no firmware needed
+
+rm -rf obj_axi/
+verilator --binary -j 0 -Wall \
+  --trace \
+  --timing \
+  --top tb_riscv_axi_lite \
+  -Mdir obj_axi \
+  -o sim_axi \
+  -Wno-fatal \
+  tb/tb_riscv_axi_lite.v
+./obj_axi/sim_axi
+gtkwave tb_riscv_axi_lite.vcd
+
+
+# =========================================================
+# Full SoC — PicoRV32 + UART + AXI  (tb_top.v)
+# =========================================================
+# make soc
+# ─────────────────────────────────────────────────────────
+# Run from: PROJECT ROOT
+
+rm -rf obj_soc
+cd fw && make && cd ..
+verilator --binary -j 0 -Wall \
+  --trace --timing \
+  -Wno-fatal \
+  -Wno-WIDTHTRUNC -Wno-WIDTHEXPAND -Wno-CASEINCOMPLETE \
+  -Wno-UNOPTFLAT -Wno-INITIALDLY -Wno-PINMISSING \
+  -Wno-UNSIGNED -Wno-SYNCASYNCNET -Wno-DECLFILENAME \
+  -Wno-GENUNNAMED -Wno-UNUSEDSIGNAL -Wno-PINCONNECTEMPTY \
+  -Wno-TIMESCALEMOD -Wno-CASEOVERLAP -Wno-BLKSEQ \
+  -Wno-EOFNEWLINE -Wno-PROCASSWIRE -Wno-WIDTHXZEXPAND \
+  -Wno-PROCASSINIT \
+  --top tb_top \
+  -Mdir obj_soc \
+  -o sim_soc \
+  rtl/picorv32.v \
+  rtl/uart_tx.v \
+  rtl/uart_rx.v \
+  rtl/uart_axi.v \
+  rtl/rom.v \
+  rtl/sram.v \
+  rtl/axi_decoder.v \
+  rtl/axi_lite_interconnect.v \
+  rtl/top.v \
+  tb/tb_top.v
+./obj_soc/sim_soc +romhex=rtl/rom.hex
+gtkwave tb_top.vcd
+
+
+# =========================================================
+# Debug SoC — structured verification log  (tb_debug.v)
+# =========================================================
+# make debug_soc
+# ─────────────────────────────────────────────────────────
+# Run from: PROJECT ROOT
+
+rm -rf obj_dir
+cd fw && make && cd ..
+verilator --binary -j 0 -Wall \
+  --trace \
+  --timing \
+  --top tb_top \
+  -Mdir obj_dir \
+  -o sim_verilator \
+  -Wno-fatal \
+  -Wno-WIDTHTRUNC \
+  -Wno-WIDTHEXPAND \
+  -Wno-PROCASSINIT \
+  -Wno-CASEINCOMPLETE \
+  -Wno-UNOPTFLAT \
+  -Wno-INITIALDLY \
+  -Wno-MULTITOP \
+  -Wno-DECLFILENAME \
+  -Wno-GENUNNAMED \
+  -Wno-UNUSEDSIGNAL \
+  -Wno-EOFNEWLINE \
+  -Wno-PINCONNECTEMPTY \
+  -Wno-BLKSEQ \
+  rtl/picorv32.v \
+  rtl/uart_tx.v \
+  rtl/uart_rx.v \
+  rtl/uart_axi.v \
+  rtl/rom.v \
+  rtl/sram.v \
+  rtl/axi_decoder.v \
+  rtl/axi_lite_interconnect.v \
+  rtl/top.v \
+  tb/tb_debug.v
+./obj_dir/sim_verilator +romhex=rtl/rom.hex
+vcd2fst tb_top_debug.vcd tb_top_debug.fst
+gtkwave tb_top_debug.fst
+
+
+# =========================================================
+# SYNTHESIS — PicoRV32 + UART + AXI  (no PDK)
+# =========================================================
+
+source ~/oss/environment
+cd openlane_design/src
+
+yosys -p "
+read_verilog -D SYNTHESIS \
+top.v \
+picorv32.v \
+uart_axi.v \
+uart_tx.v \
+uart_rx.v \
+axi_lite_interconnect.v \
+axi_decoder.v \
+sram.v \
+rom.v;
+
+synth -top top;
+
+write_json top.json;
+write_verilog synth.v;
+stat;
+"
+
+
+# =========================================================
+# SYNTHESIS — with SkyWater 130nm PDK
+# =========================================================
+
+source ~/oss/environment
+cd ~/nielit/projects/picorv32_soc_final/openlane_design/src
+
+LIB=../libs/sky130_fd_sc_hd__tt_025C_1v80.lib
+
+yosys -l yosys.log -p "
+read_verilog -D SYNTHESIS \
+top.v \
+picorv32.v \
+uart_axi.v \
+uart_tx.v \
+uart_rx.v \
+axi_lite_interconnect.v \
+axi_decoder.v \
+sram.v \
+rom.v;
+synth -top top;
+dfflibmap -liberty $LIB;
+abc -liberty $LIB;
+opt_clean;
+write_json top.json;
+write_verilog synth.v;
+stat -liberty $LIB;
+"
+
+# =========================================================
+# SYNTHESIS — Direct one-liner with SkyWater 130nm PDK
+# =========================================================
+
+yosys -l yosys.log -p "
+read_verilog -D SYNTHESIS \
+top.v \
+picorv32.v \
+uart_axi.v \
+uart_tx.v \
+uart_rx.v \
+axi_lite_interconnect.v \
+axi_decoder.v \
+sram.v \
+rom.v;
+synth -top top;
+dfflibmap -liberty $LIB;
+abc -liberty $LIB;
+opt_clean;
+write_json top.json;
+write_verilog synth.v;
+stat -liberty $LIB;
+"
+"
+
+
+
+
+# =========================================================
+# SYNTHESIS —  with SCL PDK
+# =========================================================
+
+
+# Use SS corner for synthesis (worst case / sign-off)
+
+# From: ~/OpenLaneUser/designs/Project_picorv32_soc_subsystem/
+
+LIB=./libs/lib_flow_ss/tsl18fs120_scl_ss.lib
+
+yosys -l yosys.log -p "
+read_verilog -D SYNTHESIS \
+src/top.v \
+src/picorv32.v \
+src/uart_axi.v \
+src/uart_tx.v \
+src/uart_rx.v \
+src/axi_lite_interconnect.v \
+src/axi_decoder.v \
+src/sram.v \
+src/rom.v;
+synth -top top;
+dfflibmap -liberty $LIB;
+abc -liberty $LIB;
+opt_clean;
+write_json top.json;
+write_verilog synth.v;
+stat -liberty $LIB;
+"
+
+
+
+
+
+# =========================================================
+# openlane SKY-water 130nm PDK
+# =========================================================
+
+make mount / openlane
+
+./flow.tcl -design picorv32_soc
+
+./flow.tcl -interactive
+
+prep -design picorv32_soc
+
+run_synthesis
+run_verilator
+run_floorplan
+run_placement
+run_cts
+run_routing
+run_magic
+run_magic_drc
+run_klayout
+run_lvs
